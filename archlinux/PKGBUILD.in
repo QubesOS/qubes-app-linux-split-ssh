@@ -1,0 +1,17 @@
+# Maintainer: Frederic Pierret (fepitre) <frederic@invisiblethingslab.com>
+pkgname=qubes-split-ssh
+pkgver=@VERSION@
+pkgrel=@REL@
+pkgdesc="The Qubes service for secure ssh-agent separation"
+arch=(any)
+url="https://www.qubes-os.org/"
+license=(GPL-2.0-or-later)
+depends=(socat openssh)
+_pkgnvr="${pkgname}-${pkgver}-${pkgrel}"
+source=("${_pkgnvr}.tar.gz")
+sha256sums=(SKIP)
+
+package() {
+    cd "${_pkgnvr}"
+    make install-vm DESTDIR="$pkgdir/"
+}

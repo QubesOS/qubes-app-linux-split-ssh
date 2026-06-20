@@ -1,0 +1,87 @@
+#!/bin/sh
+set -eu
+
+usage() {
+    cat >&2 <<EOF
+usage: split-ssh list <agent>
+       split-ssh add <agent> [ssh-add args...]
+       split-ssh reload <agent>
+
+  list             list keys held by <agent>
+  add (no args)    scan ~/.ssh/identities.d/<agent>/ and load every key
+                   (respects per-key <key>.ssh-add-option)
+  add <args...>    pass arguments straight to ssh-add (ad-hoc one-off)
+  reload           ssh-add -D, then re-scan the directory
+EOF
+    exit 1
+}
+
+[ $# -ge 2 ] || usage
+cmd="$1"
+agent="$2"
+shift 2
+
+case "$agent" in
+    [A-Za-z0-9]*) ;;
+    *) echo "invalid agent name" >&2; exit 1 ;;
+esac
+case "$agent" in
+    *[!A-Za-z0-9_.-]*) echo "invalid agent name" >&2; exit 1 ;;
+esac
+
+sock="/run/split-ssh/${agent}.sock"
+keydir="$HOME/.ssh/identities.d/$agent"
+
+require_sock() {
+    [ -S "$sock" ] || {
+        echo "agent '$agent' not running (start split-ssh-agent@${agent}.service)" >&2
+        exit 1
+    }
+}
+
+load_from_dir() {
+    [ -d "$keydir" ] || {
+        echo "no key directory: $keydir" >&2
+        exit 1
+    }
+    found=0
+    for key in "$keydir"/*; do
+        [ -f "$key" ] || continue
+        case "$key" in
+            *.pub|*.ssh-add-option) continue ;;
+        esac
+        grep -q -- "PRIVATE KEY-----" "$key" 2>/dev/null || continue
+        found=1
+        opts=""
+        if [ -r "${key}.ssh-add-option" ]; then
+            opts=$(cat -- "${key}.ssh-add-option")
+        fi
+        # shellcheck disable=SC2086
+        SSH_AUTH_SOCK="$sock" ssh-add $opts -- "$key"
+    done
+    [ "$found" = 1 ] || {
+        echo "no keys found in $keydir" >&2
+        exit 1
+    }
+}
+
+case "$cmd" in
+    list)
+        require_sock
+        SSH_AUTH_SOCK="$sock" exec ssh-add -l
+        ;;
+    add)
+        require_sock
+        if [ $# -eq 0 ]; then
+            load_from_dir
+        else
+            SSH_AUTH_SOCK="$sock" exec ssh-add "$@"
+        fi
+        ;;
+    reload)
+        require_sock
+        SSH_AUTH_SOCK="$sock" ssh-add -D 2>/dev/null || true
+        load_from_dir
+        ;;
+    *) usage ;;
+esac

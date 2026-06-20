@@ -1,0 +1,7 @@
+usr/lib/split-ssh/start-agent
+usr/lib/split-ssh/start-forwarder
+usr/bin/split-ssh
+etc/qubes-rpc/qubes.SshAgent
+etc/profile.d/qubes-ssh.sh
+usr/lib/systemd/system/split-ssh-agent@.service
+usr/lib/systemd/system/split-ssh-forwarder@.service

@@ -1,0 +1,21 @@
+Source: qubes-split-ssh
+Section: admin
+Priority: optional
+Maintainer: Frederic Pierret (fepitre) <frederic@invisiblethingslab.com>
+Build-Depends: debhelper-compat (= 13), quilt
+Standards-Version: 4.7.2
+Homepage: http://www.qubes-os.org
+
+Package: qubes-split-ssh
+Section: admin
+Architecture: all
+Depends:
+ socat,
+ openssh-client,
+ qubes-core-agent,
+ ${misc:Depends}
+Description: The Qubes service for secure ssh-agent separation
+ Delegates ssh-agent actions to another qube. Private keys stay in a
+ network-isolated vault qube; clients reach them over qrexec, one ssh-agent
+ instance per keyring, with the qrexec policy deciding which client may reach
+ which agent.

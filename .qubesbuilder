@@ -1,0 +1,14 @@
+host:
+  rpm:
+    build:
+    - rpm_spec/split-ssh-dom0.spec
+vm:
+  rpm:
+    build:
+    - rpm_spec/split-ssh.spec
+  deb:
+    build:
+    - debian
+  archlinux:
+    build:
+    - archlinux

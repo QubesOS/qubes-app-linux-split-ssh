@@ -1,0 +1,34 @@
+#!/bin/sh
+set -eu
+
+if [ $# -ne 1 ]; then
+    echo "usage: $0 <agent>" >&2
+    exit 1
+fi
+
+AGENT="$1"
+case "$AGENT" in
+    [A-Za-z0-9]*) ;;
+    *) echo "invalid agent name" >&2; exit 1 ;;
+esac
+case "$AGENT" in
+    *[!A-Za-z0-9_.-]*) echo "invalid agent name" >&2; exit 1 ;;
+esac
+
+VAULT_FILE="/rw/config/split-ssh-vault"
+if [ ! -s "$VAULT_FILE" ]; then
+    echo "split-SSH: $VAULT_FILE missing or empty" >&2
+    exit 1
+fi
+VAULT=$(cat "$VAULT_FILE")
+
+USER="$(qubesdb-read /default-user || echo 'user')"
+USER_HOME=$(getent passwd "$USER" | cut -d: -f6)
+SOCK_DIR="$USER_HOME/.split-ssh"
+SOCK="$SOCK_DIR/${AGENT}.sock"
+
+install -d -o "$USER" -g "$USER" -m 0700 "$SOCK_DIR"
+rm -f "$SOCK"
+
+exec runuser -u "$USER" -- sh -c \
+    "umask 0177 && exec socat 'UNIX-LISTEN:${SOCK},fork' EXEC:'qrexec-client-vm ${VAULT} qubes.SshAgent+${AGENT}'"

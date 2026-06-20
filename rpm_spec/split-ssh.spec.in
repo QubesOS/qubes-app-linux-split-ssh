@@ -1,0 +1,78 @@
+#
+# This is the SPEC file for creating binary and source RPMs for the VMs.
+#
+#
+# The Qubes OS Project, http://www.qubes-os.org
+#
+# Copyright (C) 2026  Frederic Pierret <frederic@invisiblethingslab.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+#
+
+
+Name:		qubes-split-ssh
+Version:	@VERSION@
+Release:	1%{dist}
+Summary:	The Qubes service for secure ssh-agent separation
+
+Group:		Qubes
+Vendor:		Invisible Things Lab
+License:	GPL-2.0-or-later
+URL:		http://www.qubes-os.org
+
+BuildArch:	noarch
+
+BuildRequires:	make
+
+Requires:	socat
+Requires:	openssh-clients
+Requires:	qubes-core-agent-qrexec
+
+Source0: %{name}-%{version}.tar.gz
+
+%description
+The Qubes service for delegating ssh-agent actions to another qube. Private
+keys stay in a network-isolated vault qube; clients reach them over qrexec,
+one ssh-agent instance per keyring, with the qrexec policy deciding which
+client may reach which agent.
+
+%prep
+%setup -q
+
+%build
+make clean
+make build
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install-vm-fedora DESTDIR=$RPM_BUILD_ROOT
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%dir /usr/lib/split-ssh
+/usr/lib/split-ssh/start-agent
+/usr/lib/split-ssh/start-forwarder
+/usr/bin/split-ssh
+/etc/qubes-rpc/qubes.SshAgent
+/etc/profile.d/qubes-ssh.sh
+/usr/lib/systemd/system/split-ssh-agent@.service
+/usr/lib/systemd/system/split-ssh-forwarder@.service
+
+%changelog
+@CHANGELOG@

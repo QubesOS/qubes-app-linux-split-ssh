@@ -1,0 +1,8 @@
+[Unit]
+Description=split-SSH forwarder to vault for %i
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/split-ssh/start-forwarder %i
+Restart=on-failure
+RestartSec=5

@@ -1,0 +1,5 @@
+qubes-split-ssh (1.0.0-1) unstable; urgency=medium
+
+  * Initial release.
+
+ -- Frederic Pierret (fepitre) <frederic@invisiblethingslab.com>  Wed, 17 Jun 2026 00:00:00 +0200

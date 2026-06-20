@@ -1,0 +1,35 @@
+#!/bin/sh
+set -eu
+
+# shellcheck disable=SC2154
+untrusted_agent="${QREXEC_SERVICE_ARGUMENT:-}"
+
+if [ -z "$untrusted_agent" ]; then
+    echo "split-SSH: agent name required (qubes.SshAgent+<agent>)" >&2
+    exit 1
+fi
+
+case "$untrusted_agent" in
+    [A-Za-z0-9]*) ;;
+    *) echo "split-SSH: invalid agent name" >&2; exit 1 ;;
+esac
+case "$untrusted_agent" in
+    *[!A-Za-z0-9_.-]*)
+        echo "split-SSH: invalid agent name" >&2
+        exit 1
+        ;;
+esac
+if [ "${#untrusted_agent}" -gt 64 ]; then
+    echo "split-SSH: agent name too long" >&2
+    exit 1
+fi
+
+agent="$untrusted_agent"
+sock="/run/split-ssh/${agent}.sock"
+
+if [ ! -S "$sock" ]; then
+    echo "split-SSH: agent '$agent' not running" >&2
+    exit 1
+fi
+
+exec socat - "UNIX-CONNECT:$sock"

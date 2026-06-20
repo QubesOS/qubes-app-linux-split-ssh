@@ -1,0 +1,52 @@
+#!/bin/sh
+set -eu
+
+if [ $# -ne 1 ]; then
+    echo "usage: $0 <agent>" >&2
+    exit 1
+fi
+
+AGENT="$1"
+case "$AGENT" in
+    [A-Za-z0-9]*) ;;
+    *) echo "invalid agent name" >&2; exit 1 ;;
+esac
+case "$AGENT" in
+    *[!A-Za-z0-9_.-]*) echo "invalid agent name" >&2; exit 1 ;;
+esac
+
+USER="$(qubesdb-read /default-user || echo 'user')"
+USER_HOME=$(getent passwd "$USER" | cut -d: -f6)
+SOCK_DIR="/run/split-ssh"
+SOCK="$SOCK_DIR/${AGENT}.sock"
+KEYDIR="$USER_HOME/.ssh/identities.d/$AGENT"
+
+install -d -o "$USER" -g "$USER" -m 0700 "$SOCK_DIR"
+install -d -o "$USER" -g "$USER" -m 0700 "$KEYDIR"
+rm -f "$SOCK"
+
+runuser -u "$USER" -- ssh-agent -D -a "$SOCK" &
+AGENT_PID=$!
+
+i=0
+while [ ! -S "$SOCK" ] && [ $i -lt 20 ]; do
+    sleep 0.25
+    i=$((i + 1))
+done
+
+for key in "$KEYDIR"/*; do
+    [ -f "$key" ] || continue
+    case "$key" in
+        *.pub|*.ssh-add-option) continue ;;
+    esac
+    grep -q -- "PRIVATE KEY-----" "$key" || continue
+    opts=""
+    if [ -r "${key}.ssh-add-option" ]; then
+        opts=$(cat -- "${key}.ssh-add-option")
+    fi
+    # shellcheck disable=SC2086
+    runuser -u "$USER" -- env SSH_AUTH_SOCK="$SOCK" ssh-add $opts "$key" \
+        2>/dev/null || true
+done
+
+wait "$AGENT_PID"
