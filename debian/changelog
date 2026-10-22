@@ -1,3 +1,10 @@
+qubes-split-ssh (1.1.0-1) unstable; urgency=medium
+
+  [ unamed01 ]
+  * added higher level enroll subcommand
+
+ -- Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>  Thu, 22 Oct 2026 20:14:33 +0200
+
 qubes-split-ssh (1.0.0-1) unstable; urgency=medium
 
   * Initial release.
